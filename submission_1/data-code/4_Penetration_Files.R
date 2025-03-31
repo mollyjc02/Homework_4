@@ -1,17 +1,3 @@
-##############################################################################
-## Read in market pentration data */
-##############################################################################
-
-
-#########################################################################
-## Set local "month lists" to identify different files relevant for each year
-## Month lists differ by year just in case you work with data that are only available
-## in a fraction of a year, which often happens for new data as new monthly releases
-## are made. Some data sources are also only available in certain years.
-#########################################################################
-
-monthlist_2008=c("06","07","08","09","10", "11", "12")
-monthlist_2009=c("01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12")
 monthlist_2010=c("01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12")
 monthlist_2011=c("01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12")
 monthlist_2012=c("01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12")
@@ -21,7 +7,7 @@ monthlist_2015=c("01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11
 
 
 ## Read in monthly files, append to yearly file, fill in missing info, and collapse down to yearly file
-for (y in 2008:2015) {
+for (y in 2010:2015) {
   monthlist=get(paste0("monthlist_",y))
   step=0
   for (m in monthlist) {
@@ -78,6 +64,8 @@ for (y in 2008:2015) {
   assign(paste0("ma.pene.",y),ma.penetration)  
 }
 
-ma.penetration.data=rbind(ma.pene.2008,ma.pene.2009,ma.pene.2010,
-                          ma.pene.2011,ma.pene.2012,ma.pene.2013,ma.pene.2014,ma.pene.2015)
+ma.penetration.data=rbind(ma.pene.2010,ma.pene.2011,ma.pene.2012,
+                          ma.pene.2013,ma.pene.2014,ma.pene.2015)
+
+
 write_rds(ma.penetration.data,"data/output/ma_penetration.rds")

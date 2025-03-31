@@ -158,7 +158,6 @@ macd.data.2011 = rbind(macd.data.2011a,macd.data.2011b)
 
 
 
-
 ## Raw 2012 data
 ma.path.2012a=paste0("data/input/ma-plan-characteristics/2012LandscapeSourceData_MA_3_08_12_AtoM.csv")
 ma.data.2012a=read_csv(ma.path.2012a,
@@ -478,6 +477,8 @@ macd.data.2015 = rbind(macd.data.2015a,macd.data.2015b)
 
 
 
+plan.premiums <- data.frame()  # initialize an empty data frame
+
 for (y in 2010:2015) {
 
   ############ CLEAN MA-Only Data #####################
@@ -524,14 +525,9 @@ for (y in 2010:2015) {
   ma.macd.data = ma.data %>%
     full_join(macd.data, by=c("contractid", "planid", "state", "county")) %>%
     dplyr::mutate(year=y)
+
+  plan.premiums=rbind(plan.premiums,ma.macd.data)
   
-  if (y==2007) {
-    plan.premiums=ma.macd.data
-  } else {
-    plan.premiums=rbind(plan.premiums,ma.macd.data)
   }
-  
-  
-}
 
 write_rds(plan.premiums,"data/output/plan_premiums.rds")

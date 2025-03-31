@@ -1,4 +1,6 @@
+library(plyr)
 source("submission_1/data-code/rating_variables.R")
+
 
 # Assign yearly datasets and clean star rating information
 ## 2010
@@ -223,10 +225,9 @@ star.data.2015 <- star.data.2015a %>%
 
 
 
-star.ratings <- plyr::rbind.fill(star.data.2008, star.data.2009, star.data.2010, star.data.2011,
-                   star.data.2012, star.data.2013, star.data.2014, star.data.2015)
+star.ratings <- plyr::rbind.fill(star.data.2010, star.data.2011, star.data.2012, star.data.2013, star.data.2014, star.data.2015)
 star.ratings <- as_tibble(star.ratings)
 star.ratings <- star.ratings %>% 
   mutate(new_contract)
   
-write_rds(star.ratings,"data/output/star_ratings.rds")
+write_rds(star.ratings,"data/output/star_ratings.rds") 

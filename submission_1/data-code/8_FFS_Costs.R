@@ -1,17 +1,16 @@
 ## Assign yearly file paths
-ffs.path.2010=paste0("data/input/ffs-costs/aged10.csv")
-ffs.path.2011=paste0("data/input/ffs-costs/aged11.csv")
-ffs.path.2012=paste0("data/input/ffs-costs/aged12.csv")
-ffs.path.2013=paste0("data/input/ffs-costs/aged13.csv")
-ffs.path.2014=paste0("data/input/ffs-costs/aged14.csv")
-ffs.path.2015=paste0("data/input/ffs-costs/FFS15.xlsx")
+ffs.path.2010 <- paste0("data/input/ffs-costs/aged10.csv")
+ffs.path.2011 <- paste0("data/input/ffs-costs/aged11.csv")
+ffs.path.2012 <- paste0("data/input/ffs-costs/aged12.csv")
+ffs.path.2013 <- paste0("data/input/ffs-costs/aged13.csv")
+ffs.path.2014 <- paste0("data/input/ffs-costs/aged14.csv")
+ffs.path.2015 <- paste0("data/input/ffs-costs/FFS15.xlsx") 
+
 
 drops=array(dim=c(9,2))
 drops[,1]=c(2007:2015)
 drops[,2]=c(5,4,7,7,2,2,2,2,2)
 
-
-## Years 2010-2014
 for (y in 2010:2014){
   d=drops[which(drops[,1]==y),2]
   ffs.data=read_csv(get(paste0("ffs.path.",y)),
@@ -28,16 +27,15 @@ for (y in 2010:2014){
   ffs.costs <- ffs.data %>%
     select(ssa,state,county_name,parta_enroll,parta_reimb,
            partb_enroll,partb_reimb,mean_risk) %>%
-    dplyr::mutate(year=y,
+    mutate(year=y,
            ssa=as.numeric(ssa)) %>%
-    dplyr::mutate_at(vars(parta_enroll, parta_reimb, partb_enroll, partb_reimb, mean_risk),~str_replace_all(.,",",""))  %>%      
-    dplyr::mutate_at(vars(parta_enroll, parta_reimb, partb_enroll, partb_reimb, mean_risk),as.numeric)
+    mutate_at(vars(parta_enroll, parta_reimb, partb_enroll, partb_reimb, mean_risk),~str_replace_all(.,",",""))  %>%      
+    mutate_at(vars(parta_enroll, parta_reimb, partb_enroll, partb_reimb, mean_risk),as.numeric)
   
   assign(paste("ffs.costs.",y,sep=""),ffs.costs)
   
 }
 
-## 2015
 d=drops[which(drops[,1]==2015),2]
 ffs.data=read_xlsx(get(paste0("ffs.path.",2015)),
                    skip=d,
@@ -48,8 +46,7 @@ ffs.data=read_xlsx(get(paste0("ffs.path.",2015)),
                                "partb_reimb","partb_percap",
                                "mean_risk"), na="*")
 
-                  
-ffs.costs <- ffs.data %>%
+ffs.costs.2015 <- ffs.data %>%
   select(ssa,state,county_name,parta_enroll,parta_reimb,
          partb_enroll,partb_reimb,mean_risk) %>%
   mutate(year=2015,
@@ -57,9 +54,8 @@ ffs.costs <- ffs.data %>%
   mutate_at(vars(parta_enroll, parta_reimb, partb_enroll, partb_reimb, mean_risk),~str_replace_all(.,",",""))  %>%  
   mutate_at(vars(parta_enroll, parta_reimb, partb_enroll, partb_reimb, mean_risk),as.numeric)  
 
-assign(paste("ffs.costs.",2015,sep=""),ffs.costs)
 
-ffs_costs_final=rbind(ffs.costs.2010, ffs.costs.2011, ffs.costs.2012,
+ffs.costs.final=rbind(ffs.costs.2010, ffs.costs.2011, ffs.costs.2012,
                       ffs.costs.2013, ffs.costs.2014, ffs.costs.2015)
 
-write_rds(ffs_costs_final,"data/output/ffs_costs.rds")
+write_rds(ffs.costs.final,"data/output/ffs_costs.rds")

@@ -1,19 +1,3 @@
-##############################################################################
-## Read in service area data */
-##############################################################################
-
-
-#########################################################################
-## Set local "month lists" to identify different files relevant for each year
-## Month lists differ by year just in case you work with data that are only available
-## in a fraction of a year, which often happens for new data as new monthly releases
-## are made. Some data sources are also only available in certain years.
-#########################################################################
-
-monthlist_2006=c("10", "11", "12")
-monthlist_2007=c("01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12")
-monthlist_2008=c("01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12")
-monthlist_2009=c("01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12")
 monthlist_2010=c("01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12")
 monthlist_2011=c("01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12")
 monthlist_2012=c("01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12")
@@ -22,8 +6,8 @@ monthlist_2014=c("01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11
 monthlist_2015=c("01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12")
 
 
-## Read in monthly files, append to yearly file, fill in missing info, and collapse down to yearly file
-for (y in 2006:2015) {
+## read in monthly files, append to yearly file, fill in missing info, and collapse down to yearly file
+for (y in 2010:2015) {
   monthlist=get(paste0("monthlist_",y))
   step=0
   for (m in monthlist) {
@@ -70,7 +54,7 @@ for (y in 2006:2015) {
   ## Collapse to yearly data
   service.year = service.year %>%
     group_by(contractid, fips) %>%
-    mutate(id_count=row_number())
+    dplyr::mutate(id_count=row_number())
   
   service.year = service.year %>%
     filter(id_count==1) %>%
@@ -80,6 +64,8 @@ for (y in 2006:2015) {
   assign(paste("service.area.",y,sep=""),service.year)  
 }
 
-contract.service.area=rbind(service.area.2006,service.area.2007,service.area.2008,service.area.2009,service.area.2010,
-                            service.area.2011,service.area.2012,service.area.2013,service.area.2014,service.area.2015)
-write_rds(contract.service.area,"data/output/contract_service_area.rds")
+contract.service.area=rbind(service.area.2010,service.area.2011,service.area.2012,
+                            service.area.2013,service.area.2014,service.area.2015)
+
+
+write_rds(contract.service.area, "data/output/contract_service_area.rds")
