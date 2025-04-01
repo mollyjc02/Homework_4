@@ -477,8 +477,7 @@ macd.data.2015 = rbind(macd.data.2015a,macd.data.2015b)
 
 
 
-plan.premiums <- data.frame()  # initialize an empty data frame
-
+####plan.premiums <- data.frame()  # initialize an empty data frame
 for (y in 2010:2015) {
 
   ############ CLEAN MA-Only Data #####################
@@ -488,16 +487,16 @@ for (y in 2010:2015) {
 
   ## Fill in missing plan info (by contract, plan, state, and county)
   ma.data = ma.data %>%
-    group_by(contractid, planid, state, county) %>%
+    dplyr::group_by(contractid, planid, state, county) %>%
     fill(premium)
 
   ## Remove duplicates
   ma.data = ma.data %>%
-    group_by(contractid, planid, state, county) %>%
+    dplyr::group_by(contractid, planid, state, county) %>%
     dplyr::mutate(id_count=row_number())
   
   ma.data = ma.data %>%
-    filter(id_count==1) %>%
+    dplyr::filter(id_count==1) %>%
     select(-id_count)
 
     
@@ -509,25 +508,28 @@ for (y in 2010:2015) {
     dplyr::mutate(planid=as.numeric(planid))
   
   macd.data = macd.data %>%
-    group_by(contractid, planid, state, county) %>%
+    dplyr::group_by(contractid, planid, state, county) %>%
     fill(premium_partc, premium_partd_basic, premium_partd_supp, premium_partd_total, partd_deductible)
   
   ## Remove duplicates
   macd.data = macd.data %>%
-    group_by(contractid, planid, state, county) %>%
+    dplyr::group_by(contractid, planid, state, county) %>%
     dplyr::mutate(id_count=row_number())
   
   macd.data = macd.data %>%
-    filter(id_count==1) %>%
+    dplyr::filter(id_count==1) %>%
     select(-id_count)
 
   ## Merge Part D info to Part C info
   ma.macd.data = ma.data %>%
     full_join(macd.data, by=c("contractid", "planid", "state", "county")) %>%
     dplyr::mutate(year=y)
-
-  plan.premiums=rbind(plan.premiums,ma.macd.data)
   
+  if (y==2010) {
+    plan.premiums=ma.macd.data
+  } else {
+    plan.premiums=rbind(plan.premiums,ma.macd.data)
   }
+}
 
 write_rds(plan.premiums,"data/output/plan_premiums.rds")

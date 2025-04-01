@@ -2,6 +2,7 @@ library(plyr)
 source("submission_1/data-code/rating_variables.R")
 
 
+
 # Assign yearly datasets and clean star rating information
 ## 2010
 ma.path.2010a <- paste0("data/input/ma-star-ratings/2010/2010_Part_C_Report_Card_Master_Table_2009_11_30_domain.csv")
@@ -85,14 +86,13 @@ star.data.2011 <- star.data.2011a %>%
 
 
 
-
 ## 2012
 ma.path.2012a <- paste0("data/input/ma-star-ratings/Part C 2012 Fall/2012_Part_C_Report_Card_Master_Table_2011_11_01_Star.csv")
 star.data.2012a <- read_csv(ma.path.2012a,
                          skip=5,
                          col_names=rating.vars.2012)
 star.data.2012a <- star.data.2012a %>%
-  mutate_at(vars(-one_of("contractid","org_type","contract_name","org_marketing","org_parent")),
+  dplyr::mutate_at(vars(-one_of("contractid","org_type","contract_name","org_marketing","org_parent")),
             as.numeric)
 
 
@@ -127,7 +127,6 @@ star.data.2012b <- star.data.2012b %>%
 star.data.2012 <- star.data.2012a %>%
   left_join(star.data.2012b, by=c("contractid")) %>%
   mutate(year=2012)
-
 
 
 
@@ -224,8 +223,8 @@ star.data.2015 <- star.data.2015a %>%
 
 
 
-
-star.ratings <- plyr::rbind.fill(star.data.2010, star.data.2011, star.data.2012, star.data.2013, star.data.2014, star.data.2015)
+star.ratings <- plyr::rbind.fill(star.data.2010, star.data.2011, star.data.2012, 
+                                  star.data.2013, star.data.2014, star.data.2015)
 star.ratings <- as_tibble(star.ratings)
 star.ratings <- star.ratings %>% 
   mutate(new_contract)

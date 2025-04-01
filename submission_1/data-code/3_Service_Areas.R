@@ -54,7 +54,7 @@ for (y in 2010:2015) {
   ## Collapse to yearly data
   service.year = service.year %>%
     group_by(contractid, fips) %>%
-    dplyr::mutate(id_count=row_number())
+    mutate(id_count=row_number())
   
   service.year = service.year %>%
     filter(id_count==1) %>%
