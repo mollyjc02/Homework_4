@@ -1,17 +1,15 @@
 if (!require("pacman")) install.packages("pacman")
-pacman::p_load(tidyverse, ggplot2, dplyr, lubridate, stringr, readxl, data.table, gdata)
-
-
+pacman::p_load(ggplot2, lubridate, stringr, readxl, data.table, gdata, tidyverse, dplyr)
 
 # call individual scripts 
-source("data-code/1_Plan_Data.R")
-source("data-code/2_Plan_Characteristics.R")
-source("data-code/3_Service_Areas.R")
-source("data-code/4_Penetration_Files.R")
-source("data-code/5_Star_Ratings.R")
-source("data-code/6_Risk_Rebates.R")
-source("data-code/7_MA_Benchmark.R")
-source("data-code/8_FFS_Costs.R")
+source("submission_1/data-code/1_Plan_Data.R")
+source("submission_1/data-code/2_Plan_Characteristics.R")
+source("submission_1/data-code/3_Service_Areas.R")
+source("submission_1/data-code/4_Penetration_Files.R")
+source("submission_1/data-code/5_Star_Ratings.R")
+source("submission_1/data-code/6_Risk_Rebates.R")
+source("submission_1/data-code/7_MA_Benchmark.R")
+source("submission_1/data-code/8_FFS_Costs.R")
 
 
 
@@ -55,7 +53,7 @@ final.data <- final.data %>% ungroup() %>%
              TRUE ~ NA_real_
            ))
 
-final.state <- final.data %>% 
+  final.state <- final.data %>% 
   group_by(state) %>% 
   summarize(state = first(state), state_name=last(state_long, na.rm=TRUE))
 
