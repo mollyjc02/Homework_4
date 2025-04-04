@@ -148,7 +148,6 @@ kable(rating.2010, col.names = c("Rounded Rating", "Number of Plans"), caption =
 
 
 # 6. a) Using the RD estimator with a bandwidth of 0.125, provide an estimate of the effect of receiving a 3-star versus a 2.5 star rating on enrollments. 
-install.packages("rdrobust")
 library(rdrobust)
 
 ma.rd1 <- final.data.clean %>%
@@ -161,3 +160,8 @@ est_3 <- rdrobust(y = ma.rd1$avg_enrollment, x = ma.rd1$partc_score, c = 3.5,
 sum(is.na(ma.rd1$avg_enrollment))
 
 # 6. b) Repeat the exercise to estimate the effects at 3.5 stars, and summarize your results in a table.
+
+
+
+###rm(list = setdiff(ls(), c("plan.counts.plot", "star.dist.plot", "star.dist.10", "star.dist.12", "star.dist.15", "bench.plt", "adv.share.plt", "rating.2010", "")))
+save.image("submission_1/results/hwk4_workspace.RData")

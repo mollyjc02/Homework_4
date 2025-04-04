@@ -1,0 +1,123 @@
+---
+title: "Homework 4"
+subtitle: "ECON 470, Spring 2025"
+author: "Molly Catlin"
+format:
+  pdf:
+    output-file: "catlin_molly_hwk4_s1"
+    output-ext:  "pdf"
+    header-includes:
+      - \usepackage{float}
+      - \floatplacement{table}{H}
+---
+
+```{r}
+#| include: false
+
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(tidyverse, ggplot2, dplyr, lubridate, readr, readxl, hrbrthemes, fixest,
+               scales, gganimate, gapminder, gifski, png, tufte, plotly, OECD,
+               ggrepel, survey, foreign, devtools, pdftools, kableExtra, modelsummary,
+               kableExtra)
+```
+
+Here is a link to my repository: {https://github.com/mollyjc02/Homework_4.git}
+
+\newpage 
+```{r}
+#| include: false
+#| eval: true
+
+library(here)
+load(here("submission_1", "results", "hwk4_workspace.RData"))
+```
+
+
+\newpage 
+
+
+## 1. Remove all SNPs, 800-series plans, and prescription drug only plans (i.e., plans that do not offer Part C benefits). Provide a box and whisker plot showing the distribution of plan counts by county over time. Do you think that the number of plans is sufficient, too few, or too many? 
+
+```{r} 
+#| echo: false
+#| label: fig-plan-counts
+#| fig-cap: "Distribution of Plan Counts by County Over Time"
+
+print(plan.counts.plot)
+```
+
+
+\newpage 
+
+
+## 2. Provide bar graphs showing the distribution of star ratings in 2010, 2012, and 2015. How has this distribution changed over time? 
+
+```{r} 
+#| echo: false
+#| label: fig-star-dist
+#| fig-cap: "Distribution of Star Ratings by Year"
+
+print(star.dist.plot)
+```
+
+
+```{r} 
+#| echo: false
+#| label: fig-dist-10
+#| fig-cap: "Distribution of Star Ratings in 2010"
+
+print(star.dist.10)
+```
+
+
+```{r} 
+#| echo: false
+#| label: fig-dist-12
+#| fig-cap: "Distribution of Star Ratings in 2012"
+
+print(star.dist.12)
+```
+
+
+```{r} 
+#| echo: false
+#| label: fig-dist-15
+#| fig-cap: "Distribution of Star Ratings in 2015"
+
+print(star.dist.15)
+```
+
+
+
+\newpage 
+
+
+## 3. Plot the average benchmark payment over time from 2010 through 2015. How much has the average benchmark payment risen over the years?
+
+```{r} 
+#| echo: false
+#| label: fig-bench-plt
+#| fig-cap: "Average Benchmark Payment for MA Plans (2010–2015)"
+
+print(bench.plt)
+```
+
+
+\newpage 
+
+
+## 4. Plot the average share of Medicare Advantage (relative to all Medicare eligibles) over time from 2010 through 2015. Has Medicare Advantage increased or decreased in popularity? How does this share correlate with benchmark payments?
+
+```{r} 
+#| echo: false
+#| label: fig-adv-share
+#| fig-cap: "Average Medicare Advantage Share of Medicare Eligibles (2010–2015)"
+
+print(adv.share.plt)
+```
+
+
+\newpage 
+
+
+### The following questions are utilizing data from 2010 only. 
