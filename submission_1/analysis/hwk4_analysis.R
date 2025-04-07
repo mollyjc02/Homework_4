@@ -29,8 +29,7 @@ plan.counts <- final.data.clean %>%
 ## boxplot of plan counts over time 
 plan.counts.plot <- ggplot(plan.counts, aes(x = as.factor(year), y = plan_count)) +
   geom_boxplot() +
-  labs(title = "Distribution of Plan Counts by County Over Time",
-       x = "Year",
+  labs(x = "Year",
        y = "Number of Plans per County") +
   theme_minimal()
 print(plan.counts.plot)
@@ -52,8 +51,7 @@ star.dist <- star.dist %>%
 star.dist.plot <- ggplot(star.dist, aes(x = as.factor(Star_Rating), y = count, fill = as.factor(Star_Rating))) +
   geom_bar(stat = "identity", show.legend = FALSE) + 
   facet_wrap(~ year) +  
-  labs(title = "Distribution of Star Ratings by Year",
-       x = "Star Rating",
+  labs(x = "Star Rating",
        y = "Count of Plans") +
   theme_minimal() +
   scale_fill_brewer(palette = "Set3") 
@@ -63,21 +61,21 @@ print(star.dist.plot)
 ## create seperate bar plots 
 star.dist.10 <- ggplot(subset(star.dist, year == 2010), aes(x = as.factor(Star_Rating), y = count, fill = as.factor(Star_Rating))) +
   geom_bar(stat = "identity", show.legend = FALSE) +
-  labs(title = "Star Rating Distribution in 2010", x = "Star Rating", y = "Count of Plans") +
+  labs(x = "Star Rating", y = "Count of Plans") +
   theme_minimal() +
   scale_fill_brewer(palette = "Set3")
 print(star.dist.10)
 
 star.dist.12 <- ggplot(subset(star.dist, year == 2012), aes(x = as.factor(Star_Rating), y = count, fill = as.factor(Star_Rating))) +
   geom_bar(stat = "identity", show.legend = FALSE) +
-  labs(title = "Star Rating Distribution in 2012", x = "Star Rating", y = "Count of Plans") +
+  labs(x = "Star Rating", y = "Count of Plans") +
   theme_minimal() +
   scale_fill_brewer(palette = "Set3")
 print(star.dist.12)
 
 star.dist.15 <- ggplot(subset(star.dist, year == 2015), aes(x = as.factor(Star_Rating), y = count, fill = as.factor(Star_Rating))) +
   geom_bar(stat = "identity", show.legend = FALSE) +
-  labs(title = "Star Rating Distribution in 2015", x = "Star Rating", y = "Count of Plans") +
+  labs(x = "Star Rating", y = "Count of Plans") +
   theme_minimal() +
   scale_fill_brewer(palette = "Set3")
 print(star.dist.15)
@@ -95,11 +93,8 @@ avg.benchmark <- final.data.clean %>%
 bench.plt <- ggplot(avg.benchmark, aes(x = year, y = avg_benchmark)) +
   geom_line(color = "steelblue", size = 1.2) +
   geom_point(color = "steelblue", size = 3) +
-  labs(
-    title = "Average Benchmark Payment for MA Plans (2010–2015)",
-    x = "Year",
-    y = "Average Benchmark Payment ($)"
-  ) +
+  labs(x = "Year",
+       y = "Average Benchmark Payment ($)") +
   theme_minimal()
 
 print(bench.plt)
@@ -119,11 +114,8 @@ adv.share.plt <- ggplot(adv.share, aes(x = year, y = avg_ma_share)) +
   geom_line(color = "darkgreen", size = 1.2) +
   geom_point(color = "darkgreen", size = 3) +
   scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
-  labs(
-    title = "Average Medicare Advantage Share of Medicare Eligibles (2010–2015)",
-    x = "Year",
-    y = "MA Share"
-  ) +
+  labs(x = "Year",
+       y = "MA Share") +
   theme_minimal()
 
 print(adv.share.plt)
@@ -150,14 +142,65 @@ kable(rating.2010, col.names = c("Rounded Rating", "Number of Plans"), caption =
 # 6. a) Using the RD estimator with a bandwidth of 0.125, provide an estimate of the effect of receiving a 3-star versus a 2.5 star rating on enrollments. 
 library(rdrobust)
 
-ma.rd1 <- final.data.clean %>%
-  filter(Star_Rating == 2.5 | Star_Rating == 3)
+### THIS IS WHAT I TRIED FIRST 
+final_2010 <- final.data %>%
+  filter(year == 2010, !is.na(partc_score), !is.na(avg_enrollment))
 
-est_3 <- rdrobust(y = ma.rd1$avg_enrollment, x = ma.rd1$partc_score, c = 3.5,
-                  h = 0.125, p = 1, kernel = "uniform", vce = "hc0",
-                  masspoints = "off")
+cutoff_3.0 <- 2.75
+bw <- 0.125
 
-sum(is.na(ma.rd1$avg_enrollment))
+rd_3.0 <- final_2010 %>%
+  filter(partc_score >= (cutoff_3.0 - bw) & partc_score <= (cutoff_3.0 + bw)) %>%
+  mutate(treatment = ifelse(partc_score >= cutoff_3.0, 1, 0))
+
+model_3.0 <- lm(avg_enrollment ~ treatment, data = rd_3.0)
+summary(model_3.0)
+
+
+
+### NOW I HAVE BEEN WORKING ON THIS 
+
+source("submission_1/data-code/rating_variables.R")
+
+## 2010 Data Import - Path A
+ma.path.2010a <- paste0("data/input/ma-star-ratings/2010/2010_Part_C_Report_Card_Master_Table_2009_11_30_domain.csv")
+star.data.2010a <- read_csv(ma.path.2010a,
+                            skip=4,
+                            col_names=rating.vars.2010)
+
+# Keep numeric raw ratings without categorizing into stars
+star.data.2010a <- star.data.2010a %>%
+  mutate_at(vars(-one_of("contractid","org_type","contract_name","org_marketing")),
+            as.numeric)
+
+## 2010 Data Import - Path B
+ma.path.2010b <- paste0("data/input/ma-star-ratings/2010/2010_Part_C_Report_Card_Master_Table_2009_11_30_summary.csv")
+star.data.2010b <- read_csv(ma.path.2010b,
+                            skip=2,
+                            col_names=c("contractid", "org_type", "contract_name", "org_marketing", "partc_score"))
+
+# Rename `partc_score` to `raw_partc_score` to avoid name conflict and keep numeric ratings
+star.data.2010b <- star.data.2010b %>%
+  mutate(new_contract = ifelse(partc_score == "Plan too new to be measured", 1, 0)) %>%
+  # Convert partc_score to numeric directly, skipping categorization and rename
+  mutate(raw_partc_score = as.numeric(partc_score)) %>%
+  select(contractid, new_contract, raw_partc_score)
+
+# Combine the datasets (optional, depending on how you want to use the data)
+final.star.data <- left_join(star.data.2010a, star.data.2010b, by="contractid")
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # 6. b) Repeat the exercise to estimate the effects at 3.5 stars, and summarize your results in a table.
 

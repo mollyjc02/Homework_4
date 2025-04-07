@@ -55,8 +55,7 @@ final.data <- final.data %>% ungroup() %>%
 
   final.state <- final.data %>% 
   group_by(state) %>% 
-  summarize(first(state),
-            state_name = tail(na.omit(state_long), 1)) ### I CHANGED THIS 
+  summarize(state_name = tail(na.omit(state_long), 1)) ### I CHANGED THIS 
 
 final.data <- final.data %>%
   left_join(final.state,
