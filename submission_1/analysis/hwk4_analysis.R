@@ -126,29 +126,10 @@ print(adv.share.plt)
 
 #### 2010 ONLY 
 data.2010 <- final.data %>%
-             filter(!is.na(avg_enrollment) & year==2009 & !is.na(partc_score))
+             filter(!is.na(avg_enrollment) & year==2010 & !is.na(partc_score))
 colnames(data.2010)
 
 # 5. Calculate the running variable underlying the star rating. Provide a table showing the number of plans that are rounded up into a 3-star, 3.5-star, 4-star, 4.5-star, and 5-star rating.
-star.ratings <- read_rds("data/output/star_ratings.rds")
-colnames(star.ratings)
-
-### merge in just the columns I need
-data.2010 <- data.2010 %>%
-  left_join(
-    star.ratings %>% 
-      select(contractid, year, contract_name, org_type, org_marketing,
-             breastcancer_screen, rectalcancer_screen, cv_diab_cholscreen, glaucoma_test,
-             monitoring, flu_vaccine, pn_vaccine, physical_health, mental_health,
-             osteo_test, physical_monitor, primaryaccess, osteo_manage,
-             diab_healthy, bloodpressure, ra_manage, copd_test, bladder,
-             falling, nodelays, doctor_communicate, carequickly, customer_service,                    
-             overallrating_care, overallrating_plan, complaints_plan, appeals_timely,
-             appeals_review, leave_plan, audit_problems, hold_times, info_accuracy,
-             ttyt_available),
-    by = c("contractid", "year")
-  )
-colnames(data.2010)
 
 ### calculate raw average 
 data.2010 <- data.2010 %>%
@@ -164,24 +145,23 @@ data.2010 <- data.2010 %>%
     na.rm=T)) %>%
     select(contractid, planid, fips, avg_enrollment, state, county, raw.rating, partc_score,
          avg_eligibles, avg_enrolled, premium_partc, risk_ab, Star_Rating,
-         bid, avg_ffscost, ma_rate) 
+         bid, avg_ffscost, ma_rate, plan_type) %>% 
+    mutate(mkt_share = avg_enrollment/avg_eligibles, 
+          HMO=str_detect(plan_type, "HMO"))
+colnames(data.2010)
 
+### how many were rounded up? 
+data.2010 <- data.2010 %>%
+  mutate(rounded.up = Star_Rating > raw.rating)
 
 ### table of rounded ratings 
-rating.2010 <- data.2010 %>%
-  mutate(rounded_rating = round(raw.rating * 2) / 2) %>% 
-  count(rounded_rating) %>% 
-  filter(rounded_rating %in% c(3, 3.5, 4, 4.5, 5)) %>% 
-  rename(`Rounded Rating` = rounded_rating, `Number of Plans` = n)
-print(rating.2010)
-
-### create a nicely formatted table using kable()
-library(knitr)
-kable(rating.2010, 
-      col.names = c("Rounded Rating", "Number of Plans"),
-      caption = "Table: Number of Plans by Rounded Star Rating")
-
-summary(data.2010$raw.rating)
+rounded.up.table <- data.2010 %>%
+  filter(rounded.up == TRUE) %>%
+  filter(Star_Rating %in% c(3, 3.5, 4, 4.5, 5)) %>%
+  group_by(Star_Rating) %>%
+  summarise(num_rounded_up = n()) %>%
+  arrange(Star_Rating)
+rounded.up.table
 
 
 
@@ -189,11 +169,44 @@ summary(data.2010$raw.rating)
 # 6. a) Using the RD estimator with a bandwidth of 0.125, provide an estimate of the effect of receiving a 3-star versus a 2.5 star rating on enrollments. 
 library(rdrobust)
 
+ma.rd1 <- data.2010 %>%
+  filter(Star_Rating==2.5 | Star_Rating==3) 
 
+ma.rd1 <- ma.rd1 %>%
+  mutate(
+    score = raw.rating - 2.75,
+    treat = (score >= 0), 
+    window2 = (score >= -0.125 & score <= 0.125),
+    mkt_share = avg_enrollment / avg_eligibles, 
+    ln_share = log(mkt_share), 
+    score_treat = score * treat 
+  )
+
+rd1_result <- rdrobust(ma.rd1$avg_enrollment, ma.rd1$score, c = 0, h = 0.125)
+rd1_result
 
 
 
 # 6. b) Repeat the exercise to estimate the effects at 3.5 stars, and summarize your results in a table.
+ma.rd2 <- data.2010 %>%
+  filter(Star_Rating==3 | Star_Rating==3.5) 
+
+ma.rd2 <- ma.rd2 %>%
+  mutate(
+    score = raw.rating - 3.25,
+    treat = (score >= 0), 
+    window2 = (score >= -0.125 & score <= 0.125),
+    mkt_share = avg_enrollment / avg_eligibles, 
+    ln_share = log(mkt_share), 
+    score_treat = score * treat 
+  )
+
+rd2_result <- rdrobust(ma.rd2$avg_enrollment, ma.rd2$score, c = 0, h = 0.125)
+rd2_result
+
+
+
+
 
 
 
