@@ -158,6 +158,32 @@ rd_35 <- lm(mkt_share ~ treat + score,
                   score=raw_rating-3.25)))
 summary(rd_35)
 
+# create a table from both 
+### extract tidy results
+tidy_30 <- tidy(rd_30)
+tidy_35 <- tidy(rd_35)
+
+### merge both into one table
+table_6 <- full_join(
+  tidy_30 %>% select(term, estimate, std.error) %>% rename(Estimate_3 = estimate, SE_3 = std.error),
+  tidy_35 %>% select(term, estimate, std.error) %>% rename(Estimate_3.5 = estimate, SE_3.5 = std.error),
+  by = "term"
+)
+
+### format table
+table_6 %>%
+  mutate(
+    Estimate_3 = sprintf("%.4f", Estimate_3),
+    SE_3 = sprintf("(%.4f)", SE_3),
+    Estimate_3.5 = sprintf("%.4f", Estimate_3.5),
+    SE_3.5 = sprintf("(%.4f)", SE_3.5)
+  ) %>%
+  select(term, Estimate_3, SE_3, Estimate_3.5, SE_3.5) %>%
+  kable(col.names = c("", "3 Star", "", "3.5 Star", ""),
+        caption = "Table 6: RD Estimates by Star Rating",
+        align = "lcccc") %>%
+  kable_styling(full_width = FALSE, position = "left")
+
 
 
 # 7. Repeat your results for bandwidhts of 0.1, 0.12, 0.13, 0.14, and 0.15 (again for 3 and 3.5 stars).
@@ -252,3 +278,7 @@ rd_35_15 <- lm(mkt_share ~ treat + score,
                   mutate(treat=(Star_Rating==3.5), 
                   score=raw_rating-3.25)))
 summary(rd_35_15)
+
+
+###rm(list = setdiff(ls(), c("plan_counts_plot", "star_dist_plot", "bench_plt", "adv_share_plt", "data_2010_round", "table_6")))
+save.image("submission_1/results/hwk4_workspace.RData")

@@ -113,8 +113,12 @@ kable(data_2010_round, caption="Number of ratings that were rounded up")
 
 ```{r} 
 #| echo: false
-#| label: fig-rd1-2
+#| label: tab-q6
 #| fig-cap: "RDD Results" 
 
+library(broom)
+library(kableExtra)
+library(dplyr)
 
+print(table_6)
 ```
