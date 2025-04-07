@@ -7,7 +7,7 @@ final.data <- read_rds("data/output/final_ma_data.rds")
 
 final.data.clean <- final.data %>%
   filter(!is.na(avg_enrollment) & (year %in% 2010:2015) & !is.na(partc_score))
-
+colnames(final.data.clean)
 
 
 # 1. Remove all SNPs, 800-series plans, and prescription drug only plans. Provide a box and whisker plot showing the distribution of plan counts by county over time. 
@@ -123,80 +123,71 @@ print(adv.share.plt)
 
 
 
+
 #### 2010 ONLY 
+data.2010 <- final.data %>%
+             filter(!is.na(avg_enrollment) & year==2009 & !is.na(partc_score))
+colnames(data.2010)
 
 # 5. Calculate the running variable underlying the star rating. Provide a table showing the number of plans that are rounded up into a 3-star, 3.5-star, 4-star, 4.5-star, and 5-star rating.
-rating.2010 <- final.data.clean %>%
-  filter(year == 2010, !is.na(partc_score)) %>%
-  count(partc_score) %>%
-  filter(partc_score %in% c(3, 3.5, 4, 4.5, 5)) %>%
-  rename(`Rounded Rating` = partc_score, `Number of Plans` = n)
+star.ratings <- read_rds("data/output/star_ratings.rds")
+colnames(star.ratings)
+
+### merge in just the columns I need
+data.2010 <- data.2010 %>%
+  left_join(
+    star.ratings %>% 
+      select(contractid, year, contract_name, org_type, org_marketing,
+             breastcancer_screen, rectalcancer_screen, cv_diab_cholscreen, glaucoma_test,
+             monitoring, flu_vaccine, pn_vaccine, physical_health, mental_health,
+             osteo_test, physical_monitor, primaryaccess, osteo_manage,
+             diab_healthy, bloodpressure, ra_manage, copd_test, bladder,
+             falling, nodelays, doctor_communicate, carequickly, customer_service,                    
+             overallrating_care, overallrating_plan, complaints_plan, appeals_timely,
+             appeals_review, leave_plan, audit_problems, hold_times, info_accuracy,
+             ttyt_available),
+    by = c("contractid", "year")
+  )
+colnames(data.2010)
+
+### calculate raw average 
+data.2010 <- data.2010 %>%
+  mutate(raw.rating=rowMeans(
+    cbind(breastcancer_screen, rectalcancer_screen, cv_diab_cholscreen, glaucoma_test,
+          monitoring, flu_vaccine, pn_vaccine, physical_health, mental_health,
+          osteo_test, physical_monitor, primaryaccess, osteo_manage,
+          diab_healthy, bloodpressure, ra_manage, copd_test, bladder,
+          falling, nodelays, doctor_communicate, carequickly, customer_service,                    
+          overallrating_care, overallrating_plan, complaints_plan, appeals_timely,
+          appeals_review, leave_plan, audit_problems, hold_times, info_accuracy,
+          ttyt_available),
+    na.rm=T)) %>%
+    select(contractid, planid, fips, avg_enrollment, state, county, raw.rating, partc_score,
+         avg_eligibles, avg_enrolled, premium_partc, risk_ab, Star_Rating,
+         bid, avg_ffscost, ma_rate) 
+
+
+### table of rounded ratings 
+rating.2010 <- data.2010 %>%
+  mutate(rounded_rating = round(raw.rating * 2) / 2) %>% 
+  count(rounded_rating) %>% 
+  filter(rounded_rating %in% c(3, 3.5, 4, 4.5, 5)) %>% 
+  rename(`Rounded Rating` = rounded_rating, `Number of Plans` = n)
 print(rating.2010)
 
+### create a nicely formatted table using kable()
 library(knitr)
-kable(rating.2010, col.names = c("Rounded Rating", "Number of Plans"), caption = "Number of Plans Rounded to Each Star Rating")
+kable(rating.2010, 
+      col.names = c("Rounded Rating", "Number of Plans"),
+      caption = "Table: Number of Plans by Rounded Star Rating")
+
+summary(data.2010$raw.rating)
 
 
 
 
 # 6. a) Using the RD estimator with a bandwidth of 0.125, provide an estimate of the effect of receiving a 3-star versus a 2.5 star rating on enrollments. 
 library(rdrobust)
-
-### THIS IS WHAT I TRIED FIRST 
-final_2010 <- final.data %>%
-  filter(year == 2010, !is.na(partc_score), !is.na(avg_enrollment))
-
-cutoff_3.0 <- 2.75
-bw <- 0.125
-
-rd_3.0 <- final_2010 %>%
-  filter(partc_score >= (cutoff_3.0 - bw) & partc_score <= (cutoff_3.0 + bw)) %>%
-  mutate(treatment = ifelse(partc_score >= cutoff_3.0, 1, 0))
-
-model_3.0 <- lm(avg_enrollment ~ treatment, data = rd_3.0)
-summary(model_3.0)
-
-
-
-### NOW I HAVE BEEN WORKING ON THIS 
-
-source("submission_1/data-code/rating_variables.R")
-
-## 2010 Data Import - Path A
-ma.path.2010a <- paste0("data/input/ma-star-ratings/2010/2010_Part_C_Report_Card_Master_Table_2009_11_30_domain.csv")
-star.data.2010a <- read_csv(ma.path.2010a,
-                            skip=4,
-                            col_names=rating.vars.2010)
-
-# Keep numeric raw ratings without categorizing into stars
-star.data.2010a <- star.data.2010a %>%
-  mutate_at(vars(-one_of("contractid","org_type","contract_name","org_marketing")),
-            as.numeric)
-
-## 2010 Data Import - Path B
-ma.path.2010b <- paste0("data/input/ma-star-ratings/2010/2010_Part_C_Report_Card_Master_Table_2009_11_30_summary.csv")
-star.data.2010b <- read_csv(ma.path.2010b,
-                            skip=2,
-                            col_names=c("contractid", "org_type", "contract_name", "org_marketing", "partc_score"))
-
-# Rename `partc_score` to `raw_partc_score` to avoid name conflict and keep numeric ratings
-star.data.2010b <- star.data.2010b %>%
-  mutate(new_contract = ifelse(partc_score == "Plan too new to be measured", 1, 0)) %>%
-  # Convert partc_score to numeric directly, skipping categorization and rename
-  mutate(raw_partc_score = as.numeric(partc_score)) %>%
-  select(contractid, new_contract, raw_partc_score)
-
-# Combine the datasets (optional, depending on how you want to use the data)
-final.star.data <- left_join(star.data.2010a, star.data.2010b, by="contractid")
-
-
-
-
-
-
-
-
-
 
 
 

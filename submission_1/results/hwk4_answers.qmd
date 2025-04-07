@@ -120,4 +120,29 @@ print(adv.share.plt)
 \newpage 
 
 
+
 ### The following questions are utilizing data from 2010 only. 
+
+
+## 5. Calculate the running variable underlying the star rating. Provide a table showing the number of plans that are rounded up into a 3-star, 3.5-star, 4-star, 4.5-star, and 5-star rating.
+
+```{r} 
+#| echo: false
+#| label: fig-rating
+#| fig-cap: "Number of Plans by Rounded Star Rating" 
+
+kable(rating.2010, 
+      col.names = c("Rounded Rating", "Number of Plans"))
+```
+
+
+
+## 6. Using the RD estimator with a bandwidth of 0.125, provide an estimate of the effect of receiving a 3-star versus a 2.5 star rating on enrollments. Repeat the exercise to estimate the effects at 3.5 stars, and summarize your results in a table.
+
+```{r} 
+#| echo: false
+#| label: fig-rd1
+#| fig-cap: "RDD Results" 
+
+print(rd1_result)
+```
