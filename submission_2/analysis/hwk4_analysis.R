@@ -7,8 +7,7 @@ final.data <- read_rds("data/output/final_ma_data.rds")
 
 final.data.clean <- final.data %>%
   filter((year %in% 2010:2015) & !is.na(partc_score))
-###colnames(final.data.clean) -> !is.na(avg_enrollment)
-
+colnames(final.data.clean) 
 
 # 1. Remove all SNPs, 800-series plans, and prescription drug only plans. Provide a box and whisker plot showing the distribution of plan counts by county over time. 
 final.data.clean <- final.data.clean %>%
@@ -277,7 +276,80 @@ rd_35_15 <- lm(mkt_share ~ treat + score,
                          Star_Rating %in% c(3.0, 3.5)) %>% 
                   mutate(treat=(Star_Rating==3.5), 
                   score=raw_rating-3.25)))
-summary(rd_35_15)
+summary(rd_35_15) 
+
+
+results_df <- tibble(
+  Cutoff = rep(c("3 vs 2.5 Stars", "3.5 vs 3 Stars"), each = 5),
+  Bandwidth = rep(c(0.10, 0.12, 0.13, 0.14, 0.15), 2),
+  Estimate = c(
+    tidy(rd_30_1)$estimate[2],
+    tidy(rd_30_12)$estimate[2],
+    tidy(rd_30_13)$estimate[2],
+    tidy(rd_30_14)$estimate[2],
+    tidy(rd_30_15)$estimate[2],
+    tidy(rd_35_1)$estimate[2],
+    tidy(rd_35_12)$estimate[2],
+    tidy(rd_35_13)$estimate[2],
+    tidy(rd_35_14)$estimate[2],
+    tidy(rd_35_15)$estimate[2]
+  ),
+  SE = c(
+    tidy(rd_30_1)$std.error[2],
+    tidy(rd_30_12)$std.error[2],
+    tidy(rd_30_13)$std.error[2],
+    tidy(rd_30_14)$std.error[2],
+    tidy(rd_30_15)$std.error[2],
+    tidy(rd_35_1)$std.error[2],
+    tidy(rd_35_12)$std.error[2],
+    tidy(rd_35_13)$std.error[2],
+    tidy(rd_35_14)$std.error[2],
+    tidy(rd_35_15)$std.error[2]
+  )
+)
+
+q7_fig <- ggplot(results_df, aes(x = Bandwidth, y = Estimate, color = Cutoff)) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 2) +
+  geom_errorbar(aes(ymin = Estimate - 1.96 * SE,
+                    ymax = Estimate + 1.96 * SE), width = 0.005) +
+  labs(
+    title = "RDD Treatment Effects Across Bandwidths",
+    x = "Bandwidth (+/-)",
+    y = "Estimated Treatment Effect on Market Share"
+  ) +
+  theme_minimal(base_size = 14) +
+  scale_color_manual(values = c("3 vs 2.5 Stars" = "darkblue", "3.5 vs 3 Stars" = "firebrick"))
+
+print(q7_fig) 
+
+
+# 8. Examine (graphically) whether contracts appear to manipulate the running variable. In other words, look at the distribution of the running variable before and after the relevent threshold values.
+library(gridExtra) 
+
+### subset data around each cutoff
+cutoff_3 <- data_2010 %>% filter(raw_rating >= 2.75 & raw_rating < 3.25)
+cutoff_35 <- data_2010 %>% filter(raw_rating >= 3.25 & raw_rating < 3.75)
+
+### plot around 3.0 cutoff
+plot_3 <- ggplot(cutoff_3, aes(x = raw_rating)) +
+  geom_density(fill = "skyblue", alpha = 0.6) +
+  geom_vline(xintercept = 3.0, linetype = "dashed") +
+  labs(title = "(a) Around 3.0 cutoff", x = "Running Variable", y = "Density") +
+  theme_minimal()
+
+### plot around 3.5 cutoff
+plot_35 <- ggplot(cutoff_35, aes(x = raw_rating)) +
+  geom_density(fill = "lightgreen", alpha = 0.6) +
+  geom_vline(xintercept = 3.5, linetype = "dashed") +
+  labs(title = "(b) Around 3.5 cutoff", x = "Running Variable", y = "Density") +
+  theme_minimal()
+
+### combine side-by-side
+grid.arrange(plot_3, plot_35, ncol = 2, top = "Density of Running Variable")
+
+
+
 
 
 ###rm(list = setdiff(ls(), c("plan_counts_plot", "star_dist_plot", "bench_plt", "adv_share_plt", "data_2010_round", "table_6")))
