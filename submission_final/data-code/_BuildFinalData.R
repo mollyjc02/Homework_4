@@ -2,14 +2,14 @@ if (!require("pacman")) install.packages("pacman")
 pacman::p_load(ggplot2, lubridate, stringr, readxl, data.table, gdata, tidyverse, dplyr)
 
 # call individual scripts 
-###source("submission_1/data-code/1_Plan_Data.R")
-###source("submission_1/data-code/2_Plan_Characteristics.R")
-###source("submission_1/data-code/3_Service_Areas.R")
-###source("submission_1/data-code/4_Penetration_Files.R")
-###source("submission_1/data-code/5_Star_Ratings.R")
-###source("submission_1/data-code/6_Risk_Rebates.R")
-###source("submission_1/data-code/7_MA_Benchmark.R")
-###source("submission_1/data-code/8_FFS_Costs.R")
+source("submission_1/data-code/1_Plan_Data.R")
+source("submission_1/data-code/2_Plan_Characteristics.R")
+source("submission_1/data-code/3_Service_Areas.R")
+source("submission_1/data-code/4_Penetration_Files.R")
+source("submission_1/data-code/5_Star_Ratings.R")
+source("submission_1/data-code/6_Risk_Rebates.R")
+source("submission_1/data-code/7_MA_Benchmark.R")
+source("submission_1/data-code/8_FFS_Costs.R")
 
 
 
@@ -27,12 +27,13 @@ ffs.costs.final <- read_rds("data/output/ffs_costs.rds")
 
 final.data <- full.ma.data %>%
   inner_join(contract.service.area %>% 
-               select(contractid, fips, year), 
+               distinct(contractid, fips, year), 
              by=c("contractid", "fips", "year")) %>%
   filter(!state %in% c("VI","PR","MP","GU","AS","") &
            snp == "No" &
            (planid < 800 | planid >= 900) &
-           !is.na(planid) & !is.na(fips))
+           !is.na(planid) & !is.na(fips)) 
+
 
 final.data <- final.data %>%
   left_join( star.ratings %>%

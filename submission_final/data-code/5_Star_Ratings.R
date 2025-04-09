@@ -1,4 +1,3 @@
-library(plyr)
 source("submission_1/data-code/rating_variables.R")
 
 

@@ -42,7 +42,6 @@ final.data <- final.data %>%
                dplyr::rename(state_long=state, county_long=county), 
              by=c("fips", "year"))
 
-
 # calculate star rating (Part C rating if plan doesn't offer part D, otherwise Part D rating if available)
 final.data <- final.data %>% ungroup() %>%
   mutate(Star_Rating = 
@@ -69,7 +68,6 @@ final.data <- final.data %>%
              by=c("contractid","planid","year")) %>%
   left_join( benchmark.final,
              by=c("ssa","year"))
-
 
 # calculate relevant benchmark rate based on star rating
 final.data <- final.data %>% ungroup() %>%
