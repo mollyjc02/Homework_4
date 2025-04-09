@@ -109,7 +109,7 @@ data_2010 <- data_2010 %>%
           ttyt_available),
     na.rm=T)) %>%
     select(contractid, planid, fips, avg_enrollment, state, county, raw_rating, partc_score,
-         avg_eligibles, avg_enrolled, premium_partc, risk_ab, Star_Rating,
+         avg_eligibles, avg_enrolled, premium_partc, partd, risk_ab, Star_Rating,
          bid, avg_ffscost, ma_rate, plan_type) %>% 
     mutate(mkt_share = avg_enrollment/avg_eligibles, 
           HMO=str_detect(plan_type, "HMO"))
@@ -332,25 +332,79 @@ cutoff_3 <- data_2010 %>% filter(raw_rating >= 2.75 & raw_rating < 3.25)
 cutoff_35 <- data_2010 %>% filter(raw_rating >= 3.25 & raw_rating < 3.75)
 
 ### plot around 3.0 cutoff
-plot_3 <- ggplot(cutoff_3, aes(x = raw_rating)) +
+dist_3 <- ggplot(cutoff_3, aes(x = raw_rating)) +
   geom_density(fill = "skyblue", alpha = 0.6) +
   geom_vline(xintercept = 3.0, linetype = "dashed") +
   labs(title = "(a) Around 3.0 cutoff", x = "Running Variable", y = "Density") +
   theme_minimal()
 
 ### plot around 3.5 cutoff
-plot_35 <- ggplot(cutoff_35, aes(x = raw_rating)) +
+dist_35 <- ggplot(cutoff_35, aes(x = raw_rating)) +
   geom_density(fill = "lightgreen", alpha = 0.6) +
   geom_vline(xintercept = 3.5, linetype = "dashed") +
   labs(title = "(b) Around 3.5 cutoff", x = "Running Variable", y = "Density") +
   theme_minimal()
 
 ### combine side-by-side
-grid.arrange(plot_3, plot_35, ncol = 2, top = "Density of Running Variable")
+dist_plot <- grid.arrange(dist_3, dist_35, ncol = 2, top = "Density of Running Variable")
+print(dist_plot)
+
+
+# 9. Similar to question 4, examine whether plans just above the threshold values have different characteristics than contracts just below the threshold values. Use HMO and Part D status as your plan characteristics.
+### create binary indicators if not already
+data_2010 <- data_2010 %>%
+  mutate(HMO_binary = as.numeric(HMO),
+         PartD_binary = as.numeric(partd == "Y"))
+
+get_balance_data <- function(data, cutoff, low_star, high_star, vars) {
+  data_filtered <- data %>%
+    filter(raw_rating >= (cutoff - 0.125) & raw_rating <= (cutoff + 0.125)) %>%
+    filter(Star_Rating %in% c(low_star, high_star)) %>%
+    mutate(treat = as.numeric(Star_Rating == high_star))
+
+  map_dfr(vars, function(v) {
+    means <- data_filtered %>%
+      group_by(treat) %>%
+      summarize(mean = mean(.data[[v]], na.rm = TRUE), .groups = "drop")
+
+    tibble(
+      variable = v,
+      mean_diff = means$mean[2] - means$mean[1]
+    )
+  }) %>%
+    mutate(variable = recode(variable, HMO_binary = "HMO", PartD_binary = "Part D"))
+}
+
+### get data for both cutoffs
+vars <- c("HMO_binary", "PartD_binary")
+balance_3.0 <- get_balance_data(data_2010, 2.75, 2.5, 3.0, vars)
+balance_3.5 <- get_balance_data(data_2010, 3.25, 3.0, 3.5, vars)
+
+
+plot_3 <- ggplot(balance_3.0, aes(x = mean_diff, y = variable)) +
+  geom_point(size = 3) +
+  geom_vline(xintercept = 0, linetype = "dotted") +
+  labs(title = "(a) Around 3.0 cutoff", x = "Mean Differences", y = NULL) +
+  xlim(-0.4, 0.4) +
+  theme_minimal(base_size = 14)
+
+plot_35 <- ggplot(balance_3.5, aes(x = mean_diff, y = variable)) +
+  geom_point(size = 3) +
+  geom_vline(xintercept = 0, linetype = "dotted") +
+  labs(title = "(b) Around 3.5 cutoff", x = "Mean Differences", y = NULL) +
+  xlim(-0.4, 0.4) +
+  theme_minimal(base_size = 14)
+
+### arrange side by side
+char_plot <- grid.arrange(plot_3, plot_35, ncol = 2, top = "Covariate Balance")
+
+
+
+rm(list = setdiff(ls(), c("plan_counts_plot", "star_dist_plot", "bench_plt", "adv_share_plt", "data_2010_round", "table_6", "q7_fig", "dist_plot", "dist_3", "dist_35", "char_plot", "plot_3", "plot_35")))
+save.image("submission_2/results/hwk4_workspace.RData")
 
 
 
 
 
-###rm(list = setdiff(ls(), c("plan_counts_plot", "star_dist_plot", "bench_plt", "adv_share_plt", "data_2010_round", "table_6")))
-save.image("submission_1/results/hwk4_workspace.RData")
+
