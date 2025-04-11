@@ -71,15 +71,17 @@ print(bench_plt)
 
 
 # 4. Plot the average share of Medicare Advantage (relative to all Medicare eligibles) over time from 2010 through 2015. 
-avg_share <- final.data.clean %>%
+avg_share <- final.data %>%
   filter(avg_eligibles > 0, avg_enrolled >= 0) %>%
   mutate(ma_share = avg_enrolled / avg_eligibles) %>%
   group_by(year) %>%
   summarize(avg_ma_share = mean(ma_share, na.rm = TRUE))
 
 ## Line plot of average MA share over time
+library(scales)
+
 adv_share_plt <- ggplot(avg_share, aes(x = year, y = avg_ma_share)) +
-  geom_line(color = "#008cff", size = 1.2) +
+  geom_line(color = "#008cff", size = 1) +
   geom_point(size = 3) +
   scale_y_continuous(labels = percent_format(accuracy = 1)) +
   labs(x = "Year",
@@ -135,7 +137,8 @@ data_2010_round <- data_2010 %>%
   select(Star_Rating, rounded_up)
 
 ### table of rounded ratings 
-kable(data_2010_round, caption="Number of ratings that were rounded up")
+library(knitr)
+kable(data_2010_round)
 
 
 
@@ -147,7 +150,6 @@ rd_30 <- lm(mkt_share ~ treat + score,
                          Star_Rating %in% c(2.5, 3.0)) %>% 
                   mutate(treat=(Star_Rating==3.0), 
                   score=raw_rating-2.75))) 
-summary(rd_30)
 
 # 6. b) Repeat the exercise to estimate the effects at 3.5 stars, and summarize your results in a table.
 rd_35 <- lm(mkt_share ~ treat + score, 
@@ -157,158 +159,73 @@ rd_35 <- lm(mkt_share ~ treat + score,
                          Star_Rating %in% c(3.0, 3.5)) %>% 
                   mutate(treat=(Star_Rating==3.5), 
                   score=raw_rating-3.25)))
-summary(rd_35)
 
 # create a table from both 
-### extract tidy results
-tidy_30 <- tidy(rd_30)
-tidy_35 <- tidy(rd_35)
+library(modelsummary)
 
 ### merge both into one table
-table_6 <- full_join(
-  tidy_30 %>% select(term, estimate, std.error) %>% rename(Estimate_3 = estimate, SE_3 = std.error),
-  tidy_35 %>% select(term, estimate, std.error) %>% rename(Estimate_3.5 = estimate, SE_3.5 = std.error),
-  by = "term"
-)
+models <- list(
+  "3 Stars" = rd_30,
+  "3.5 Stars" = rd_35)
 
-### format table
-table_6 %>%
-  mutate(
-    Estimate_3 = sprintf("%.4f", Estimate_3),
-    SE_3 = sprintf("(%.4f)", SE_3),
-    Estimate_3.5 = sprintf("%.4f", Estimate_3.5),
-    SE_3.5 = sprintf("(%.4f)", SE_3.5)
-  ) %>%
-  select(term, Estimate_3, SE_3, Estimate_3.5, SE_3.5) %>%
-  kable(col.names = c("", "3 Star", "", "3.5 Star", ""),
-        caption = "Table 6: RD Estimates by Star Rating",
-        align = "lcccc") %>%
-  kable_styling(full_width = FALSE, position = "left")
+### show clean table with modelsummary
+table_6 <- modelsummary(models,
+             statistic = "std.error",
+             stars = TRUE,
+             gof_omit = "Adj|Log|F|AIC|BIC", # keep only obs, R2, RMSE
+             title = "Table 6: RD Estimates by Star Rating",
+             output = "kableExtra")
+print(table_6)
 
 
 
 # 7. Repeat your results for bandwidhts of 0.1, 0.12, 0.13, 0.14, and 0.15 (again for 3 and 3.5 stars).
-rd_30_1 <- lm(mkt_share ~ treat + score, 
-            data=(data_2010 %>% 
-                  filter(raw_rating>=(2.75-0.1), 
-                         raw_rating<=(2.75+0.1), 
-                         Star_Rating %in% c(2.5, 3.0)) %>% 
-                  mutate(treat=(Star_Rating==3.0), 
-                  score=raw_rating-2.75))) 
-summary(rd_30_1)
+library(purrr)
 
-rd_30_12 <- lm(mkt_share ~ treat + score, 
-            data=(data_2010 %>% 
-                  filter(raw_rating>=(2.75-0.12), 
-                         raw_rating<=(2.75+0.12), 
-                         Star_Rating %in% c(2.5, 3.0)) %>% 
-                  mutate(treat=(Star_Rating==3.0), 
-                  score=raw_rating-2.75))) 
-summary(rd_30_12)
+### define bandwidths
+bandwidths <- c(0.10, 0.12, 0.13, 0.14, 0.15)
 
-rd_30_13 <- lm(mkt_share ~ treat + score, 
-            data=(data_2010 %>% 
-                  filter(raw_rating>=(2.75-0.13), 
-                         raw_rating<=(2.75+0.13), 
-                         Star_Rating %in% c(2.5, 3.0)) %>% 
-                  mutate(treat=(Star_Rating==3.0), 
-                  score=raw_rating-2.75))) 
-summary(rd_30_13)
+### function to fit RD model
+run_rd <- function(center, treat_val, control_val, bw) {
+  lm(mkt_share ~ treat + score,
+     data = data_2010 %>%
+       filter(raw_rating >= (center - bw),
+              raw_rating <= (center + bw),
+              Star_Rating %in% c(treat_val, control_val)) %>%
+       mutate(treat = Star_Rating == treat_val,
+              score = raw_rating - center))
+}
 
-rd_30_14 <- lm(mkt_share ~ treat + score, 
-            data=(data_2010 %>% 
-                  filter(raw_rating>=(2.75-0.14), 
-                         raw_rating<=(2.75+0.14), 
-                         Star_Rating %in% c(2.5, 3.0)) %>% 
-                  mutate(treat=(Star_Rating==3.0), 
-                  score=raw_rating-2.75))) 
-summary(rd_30_14)
+### Estimate for 3 Stars vs 2.5
+rd_30_models <- map(bandwidths, ~run_rd(center = 2.75, treat_val = 3.0, control_val = 2.5, bw = .x))
+names(rd_30_models) <- paste0("rd_30_bw_", bandwidths)
 
-rd_30_15 <- lm(mkt_share ~ treat + score, 
-            data=(data_2010 %>% 
-                  filter(raw_rating>=(2.75-0.15), 
-                         raw_rating<=(2.75+0.15), 
-                         Star_Rating %in% c(2.5, 3.0)) %>% 
-                  mutate(treat=(Star_Rating==3.0), 
-                  score=raw_rating-2.75))) 
-summary(rd_30_15)
+### estimate for 3.5 Stars vs 3.0
+rd_35_models <- map(bandwidths, ~run_rd(center = 3.25, treat_val = 3.5, control_val = 3.0, bw = .x))
+names(rd_35_models) <- paste0("rd_35_bw_", bandwidths) 
 
+models_all <- c(rd_30_models, rd_35_models)
 
+### add labels to distinguish model sets
+library(broom)
 
-rd_35_1 <- lm(mkt_share ~ treat + score, 
-            data=(data_2010 %>% 
-                  filter(raw_rating>=(3.25-0.1), 
-                         raw_rating<=(3.25+0.1), 
-                         Star_Rating %in% c(3.0, 3.5)) %>% 
-                  mutate(treat=(Star_Rating==3.5), 
-                  score=raw_rating-3.25)))
-summary(rd_35_1)
-
-rd_35_12 <- lm(mkt_share ~ treat + score, 
-            data=(data_2010 %>% 
-                  filter(raw_rating>=(3.25-0.12), 
-                         raw_rating<=(3.25+0.12), 
-                         Star_Rating %in% c(3.0, 3.5)) %>% 
-                  mutate(treat=(Star_Rating==3.5), 
-                  score=raw_rating-3.25)))
-summary(rd_35_12)
-
-rd_35_13 <- lm(mkt_share ~ treat + score, 
-            data=(data_2010 %>% 
-                  filter(raw_rating>=(3.25-0.13), 
-                         raw_rating<=(3.25+0.13), 
-                         Star_Rating %in% c(3.0, 3.5)) %>% 
-                  mutate(treat=(Star_Rating==3.5), 
-                  score=raw_rating-3.25)))
-summary(rd_35_13)
-
-rd_35_14 <- lm(mkt_share ~ treat + score, 
-            data=(data_2010 %>% 
-                  filter(raw_rating>=(3.25-0.14), 
-                         raw_rating<=(3.25+0.14), 
-                         Star_Rating %in% c(3.0, 3.5)) %>% 
-                  mutate(treat=(Star_Rating==3.5), 
-                  score=raw_rating-3.25)))
-summary(rd_35_14)
-
-rd_35_15 <- lm(mkt_share ~ treat + score, 
-            data=(data_2010 %>% 
-                  filter(raw_rating>=(3.25-0.15), 
-                         raw_rating<=(3.25+0.15), 
-                         Star_Rating %in% c(3.0, 3.5)) %>% 
-                  mutate(treat=(Star_Rating==3.5), 
-                  score=raw_rating-3.25)))
-summary(rd_35_15) 
-
-
-results_df <- tibble(
-  Cutoff = rep(c("3 vs 2.5 Stars", "3.5 vs 3 Stars"), each = 5),
-  Bandwidth = rep(c(0.10, 0.12, 0.13, 0.14, 0.15), 2),
-  Estimate = c(
-    tidy(rd_30_1)$estimate[2],
-    tidy(rd_30_12)$estimate[2],
-    tidy(rd_30_13)$estimate[2],
-    tidy(rd_30_14)$estimate[2],
-    tidy(rd_30_15)$estimate[2],
-    tidy(rd_35_1)$estimate[2],
-    tidy(rd_35_12)$estimate[2],
-    tidy(rd_35_13)$estimate[2],
-    tidy(rd_35_14)$estimate[2],
-    tidy(rd_35_15)$estimate[2]
-  ),
-  SE = c(
-    tidy(rd_30_1)$std.error[2],
-    tidy(rd_30_12)$std.error[2],
-    tidy(rd_30_13)$std.error[2],
-    tidy(rd_30_14)$std.error[2],
-    tidy(rd_30_15)$std.error[2],
-    tidy(rd_35_1)$std.error[2],
-    tidy(rd_35_12)$std.error[2],
-    tidy(rd_35_13)$std.error[2],
-    tidy(rd_35_14)$std.error[2],
-    tidy(rd_35_15)$std.error[2]
-  )
-)
+results_df <- bind_rows(
+  map2_dfr(rd_30_models, bandwidths, ~{
+    tidy(.x)[2, ] %>%  # Row 2 is for `treat`
+      mutate(
+        Cutoff = "3 vs 2.5 Stars",
+        Bandwidth = .y
+      )
+  }),
+  map2_dfr(rd_35_models, bandwidths, ~{
+    tidy(.x)[2, ] %>%
+      mutate(
+        Cutoff = "3.5 vs 3 Stars",
+        Bandwidth = .y
+      )
+  })
+) %>%
+  select(Cutoff, Bandwidth, Estimate = estimate, SE = std.error)
 
 q7_fig <- ggplot(results_df, aes(x = Bandwidth, y = Estimate, color = Cutoff)) +
   geom_line(linewidth = 1) +
@@ -316,97 +233,80 @@ q7_fig <- ggplot(results_df, aes(x = Bandwidth, y = Estimate, color = Cutoff)) +
   geom_errorbar(aes(ymin = Estimate - 1.96 * SE,
                     ymax = Estimate + 1.96 * SE), width = 0.005) +
   labs(
-    title = "RDD Treatment Effects Across Bandwidths",
     x = "Bandwidth (+/-)",
-    y = "Estimated Treatment Effect on Market Share"
+    y = "Estimated Treatment Effect"
   ) +
   theme_minimal(base_size = 14) +
   scale_color_manual(values = c("3 vs 2.5 Stars" = "darkblue", "3.5 vs 3 Stars" = "firebrick"))
+print(q7_fig)
 
-print(q7_fig) 
 
 
 # 8. Examine (graphically) whether contracts appear to manipulate the running variable. In other words, look at the distribution of the running variable before and after the relevent threshold values.
 library(gridExtra) 
 
 ### subset data around each cutoff
-cutoff_3 <- data_2010 %>% filter(raw_rating >= 2.75 & raw_rating < 3.25)
-cutoff_35 <- data_2010 %>% filter(raw_rating >= 3.25 & raw_rating < 3.75)
+cutoff_3 <- data_2010 %>% filter(raw_rating > 2.5 & raw_rating < 3)
+cutoff_35 <- data_2010 %>% filter(raw_rating > 3 & raw_rating < 3.5)
 
 ### plot around 3.0 cutoff
 dist_3 <- ggplot(cutoff_3, aes(x = raw_rating)) +
   geom_density(fill = "skyblue", alpha = 0.6) +
-  geom_vline(xintercept = 3.0, linetype = "dashed") +
+  geom_vline(xintercept = 2.75, linetype = "dashed") +
   labs(title = "(a) Around 3.0 cutoff", x = "Running Variable", y = "Density") +
   theme_minimal()
 
 ### plot around 3.5 cutoff
 dist_35 <- ggplot(cutoff_35, aes(x = raw_rating)) +
   geom_density(fill = "lightgreen", alpha = 0.6) +
-  geom_vline(xintercept = 3.5, linetype = "dashed") +
+  geom_vline(xintercept = 3.25, linetype = "dashed") +
   labs(title = "(b) Around 3.5 cutoff", x = "Running Variable", y = "Density") +
   theme_minimal()
 
 ### combine side-by-side
 dist_plot <- grid.arrange(dist_3, dist_35, ncol = 2, top = "Density of Running Variable")
-print(dist_plot)
+
 
 
 # 9. Similar to question 4, examine whether plans just above the threshold values have different characteristics than contracts just below the threshold values. Use HMO and Part D status as your plan characteristics.
-### create binary indicators if not already
-data_2010 <- data_2010 %>%
-  mutate(HMO_binary = as.numeric(HMO),
-         PartD_binary = as.numeric(partd == "Y"))
+library(cobalt)
+library(patchwork)
 
-get_balance_data <- function(data, cutoff, low_star, high_star, vars) {
-  data_filtered <- data %>%
-    filter(raw_rating >= (cutoff - 0.125) & raw_rating <= (cutoff + 0.125)) %>%
-    filter(Star_Rating %in% c(low_star, high_star)) %>%
-    mutate(treat = as.numeric(Star_Rating == high_star))
+### 3 vs 2.5 star threshold
+lp_30 <- data_2010 %>%
+  filter((raw_rating >= 2.75 - 0.125) & (raw_rating <= 2.75 + 0.125)) %>%
+  filter(Star_Rating %in% c(2.5, 3.0)) %>%
+  mutate(rounded = (Star_Rating == 3.0)) %>%
+  select(HMO, partd, rounded) %>%
+  filter(complete.cases(.))
 
-  map_dfr(vars, function(v) {
-    means <- data_filtered %>%
-      group_by(treat) %>%
-      summarize(mean = mean(.data[[v]], na.rm = TRUE), .groups = "drop")
+plot_30 <- love.plot(
+  bal.tab(lp_30 %>% select(HMO, partd), treat = lp_30$rounded),
+  colors = "black", shapes = "circle", threshold = 0.1
+) +
+  labs(title = "(a) 3-Star Cutoff") +
+  theme_bw() + theme(legend.position = "none")
 
-    tibble(
-      variable = v,
-      mean_diff = means$mean[2] - means$mean[1]
-    )
-  }) %>%
-    mutate(variable = recode(variable, HMO_binary = "HMO", PartD_binary = "Part D"))
-}
+### 3.5 vs 3 star threshold
+lp_35 <- data_2010 %>%
+  filter((raw_rating >= 3.25 - 0.125) & (raw_rating <= 3.25 + 0.125)) %>%
+  filter(Star_Rating %in% c(3.0, 3.5)) %>%
+  mutate(rounded = (Star_Rating == 3.5)) %>%
+  select(HMO, partd, rounded) %>%
+  filter(complete.cases(.))
 
-### get data for both cutoffs
-vars <- c("HMO_binary", "PartD_binary")
-balance_3.0 <- get_balance_data(data_2010, 2.75, 2.5, 3.0, vars)
-balance_3.5 <- get_balance_data(data_2010, 3.25, 3.0, 3.5, vars)
+plot_35 <- love.plot(
+  bal.tab(lp_35 %>% select(HMO, partd), treat = lp_35$rounded),
+  colors = "black", shapes = "circle", threshold = 0.1
+) +
+  labs(title = "(b) 3.5-Star Cutoff") +
+  theme_bw() + theme(legend.position = "none")
 
-
-plot_3 <- ggplot(balance_3.0, aes(x = mean_diff, y = variable)) +
-  geom_point(size = 3) +
-  geom_vline(xintercept = 0, linetype = "dotted") +
-  labs(title = "(a) Around 3.0 cutoff", x = "Mean Differences", y = NULL) +
-  xlim(-0.4, 0.4) +
-  theme_minimal(base_size = 14)
-
-plot_35 <- ggplot(balance_3.5, aes(x = mean_diff, y = variable)) +
-  geom_point(size = 3) +
-  geom_vline(xintercept = 0, linetype = "dotted") +
-  labs(title = "(b) Around 3.5 cutoff", x = "Mean Differences", y = NULL) +
-  xlim(-0.4, 0.4) +
-  theme_minimal(base_size = 14)
-
-### arrange side by side
-char_plot <- grid.arrange(plot_3, plot_35, ncol = 2, top = "Covariate Balance")
+### combine side-by-side
+combined_plot <- plot_30 + plot_35 + plot_layout(ncol = 2)
+print(combined_plot)
 
 
 
-rm(list = setdiff(ls(), c("plan_counts_plot", "star_dist_plot", "bench_plt", "adv_share_plt", "data_2010_round", "table_6", "q7_fig", "dist_plot", "dist_3", "dist_35", "char_plot", "plot_3", "plot_35")))
-save.image("submission_2/results/hwk4_workspace.RData")
-
-
-
-
-
-
+rm(list = setdiff(ls(), c("plan_counts_plot", "star_dist_plot", "bench_plt", "adv_share_plt", "data_2010_round", "models", "q7_fig", "dist_plot", "dist_3", "dist_35", "combined_plot", "plot_30", "plot_35")))
+save.image("submission_final/results/hwk4_workspace.RData") 

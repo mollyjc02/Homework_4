@@ -1,5 +1,5 @@
 if (!require("pacman")) install.packages("pacman")
-pacman::p_load(ggplot2, lubridate, stringr, readxl, data.table, gdata, tidyverse, dplyr)
+pacman::p_load(tidyverse, ggplot2, dplyr, lubridate, stringr, readxl, data.table, gdata)
 
 # call individual scripts 
 source("submission_1/data-code/1_Plan_Data.R")
@@ -27,13 +27,12 @@ ffs.costs.final <- read_rds("data/output/ffs_costs.rds")
 
 final.data <- full.ma.data %>%
   inner_join(contract.service.area %>% 
-               distinct(contractid, fips, year), 
+               select(contractid, fips, year), 
              by=c("contractid", "fips", "year")) %>%
   filter(!state %in% c("VI","PR","MP","GU","AS","") &
            snp == "No" &
            (planid < 800 | planid >= 900) &
-           !is.na(planid) & !is.na(fips)) 
-
+           !is.na(planid) & !is.na(fips))
 
 final.data <- final.data %>%
   left_join( star.ratings %>%
@@ -42,7 +41,6 @@ final.data <- final.data %>%
   left_join( ma.penetration.data %>% ungroup() %>% select(-ssa) %>%
                dplyr::rename(state_long=state, county_long=county), 
              by=c("fips", "year"))
-
 
 # calculate star rating (Part C rating if plan doesn't offer part D, otherwise Part D rating if available)
 final.data <- final.data %>% ungroup() %>%
@@ -70,7 +68,6 @@ final.data <- final.data %>%
              by=c("contractid","planid","year")) %>%
   left_join( benchmark.final,
              by=c("ssa","year"))
-
 
 # calculate relevant benchmark rate based on star rating
 final.data <- final.data %>% ungroup() %>%
