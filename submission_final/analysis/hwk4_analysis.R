@@ -138,6 +138,7 @@ data_2010_round <- data_2010 %>%
 
 ### table of rounded ratings 
 library(knitr)
+colnames(data_2010_round) <- c("Star Rating", "Rounded Up")
 kable(data_2010_round)
 
 
@@ -172,7 +173,10 @@ models <- list(
 table_6 <- modelsummary(models,
              statistic = "std.error",
              stars = TRUE,
-             gof_omit = "Adj|Log|F|AIC|BIC", # keep only obs, R2, RMSE
+             gof_omit = "Adj|Log|F|AIC|BIC", 
+             coef_rename = c(
+             "treatTRUE" = "Rounded",
+             "score" = "Running Score"),
              title = "Table 6: RD Estimates by Star Rating",
              output = "kableExtra")
 print(table_6)
@@ -263,10 +267,6 @@ dist_35 <- ggplot(cutoff_35, aes(x = raw_rating)) +
   labs(title = "(b) Around 3.5 cutoff", x = "Running Variable", y = "Density") +
   theme_minimal()
 
-### combine side-by-side
-dist_plot <- grid.arrange(dist_3, dist_35, ncol = 2, top = "Density of Running Variable")
-
-
 
 # 9. Similar to question 4, examine whether plans just above the threshold values have different characteristics than contracts just below the threshold values. Use HMO and Part D status as your plan characteristics.
 library(cobalt)
@@ -302,11 +302,8 @@ plot_35 <- love.plot(
   labs(title = "(b) 3.5-Star Cutoff") +
   theme_bw() + theme(legend.position = "none")
 
-### combine side-by-side
-combined_plot <- plot_30 + plot_35 + plot_layout(ncol = 2)
-print(combined_plot)
 
 
 
-rm(list = setdiff(ls(), c("plan_counts_plot", "star_dist_plot", "bench_plt", "adv_share_plt", "data_2010_round", "models", "q7_fig", "dist_plot", "dist_3", "dist_35", "combined_plot", "plot_30", "plot_35")))
+rm(list = setdiff(ls(), c("plan_counts_plot", "star_dist_plot", "bench_plt", "adv_share_plt", "data_2010_round", "models", "q7_fig", "dist_3", "dist_35", "plot_30", "plot_35")))
 save.image("submission_final/results/hwk4_workspace.RData") 

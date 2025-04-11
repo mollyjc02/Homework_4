@@ -165,8 +165,7 @@ The results are generally stable across the range of bandwidths. For the 2.5 vs.
 #| label: fig-dist
 #| fig-cap: "Variable Distribution" 
 
-dist_plot <- invisible(grid.arrange(dist_3, dist_35, ncol = 2, top = "Density of Running Variable"))
-print(dist_plot)
+grid.arrange(dist_3, dist_35, ncol = 2, top = "Density of Running Variable")
 ```
 
 The density plots show the distribution of raw plan ratings around the 2.75 and 3.25 cutoffs. In panel a, there is a clear spike just above the 2.75 threshold, suggesting a potential manipulation of scores to round plans up to a 3-star rating. In contrast, panel b shows a smoother distribution around the 3.25 threshold, with no clear discontinuity or sign of manipulation. This suggests that manipulation is more likely to occur at the lower threshold.
