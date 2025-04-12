@@ -4,7 +4,7 @@ subtitle: "ECON 470, Spring 2025"
 author: "Molly Catlin"
 format:
   pdf:
-    output-file: "catlin_molly_hwk4_s2"
+    output-file: "catlin_molly_hwk4_sf"
     output-ext:  "pdf"
     header-includes:
       - \usepackage{float}
@@ -48,7 +48,7 @@ load(here("submission_final", "results", "hwk4_workspace.RData"))
 print(plan_counts_plot)
 ```
 
-Figure 1 shows that most counties had around 6–7 Medicare Advantage plans available from 2011 to 2015. In 2010, this number was substantially higher (around 13), but it decreased and stabilized in the following years. Although a count of 6–7 plans per county is a substantial drop from the value received in 2010, it still offers a relatively reasonable number of options for Medicare beneficiaries to choose from. It’s also important to note the presence of high outliers, which indicate that some counties had far more plans than average. This suggests that the median number of plans may better reflect typical access, and in some counties, it could be low enough to limit meaningful choice.
+Figure 1 shows that most counties had around 6–7 Medicare Advantage plans available from 2011 to 2015. In 2010, this number was  higher (around 13), but it decreased and stabilized in the following years. Although a count of 6–7 plans per county is a substantial drop from the value received in 2010, it still offers a relatively reasonable number of options for Medicare beneficiaries to choose from. It’s also important to note the presence of high outliers, which indicate that some counties had far more plans than average. This suggests that the median number of plans may better reflect typical access, and in some counties, it could be low enough to limit meaningful choice.
 
 
 \newpage 
@@ -64,7 +64,7 @@ Figure 1 shows that most counties had around 6–7 Medicare Advantage plans avai
 print(star_dist_plot)
 ```
 
-Generally speaking, the distribution of star ratings has shifted over time, with fewer poorly rated plans and more highly rated plans becoming available. This trend appears to be most evident when looking at the sharp decline in the number of 2.5-star plans, which made up the majority in 2010 but dropped significantly by 2012 (see Figure 2). Inversely, the number of 4.5-star plans was substantially higher in 2015 than it was in 2010.
+Generally speaking, the distribution of star ratings has shifted over time, with fewer poorly rated plans and more highly rated plans becoming available. This trend appears to be most evident when looking at the sharp decline in the number of 2.5 star plans, which made up the majority in 2010 but dropped significantly by 2012 (see Figure 2). Inversely, the number of 4.5-star plans was substantially higher in 2015 than it was in 2010.
 
 
 \newpage 
@@ -96,7 +96,7 @@ The average benchmark payment remained relatively stable between 2010 and 2015, 
 print(adv_share_plt)
 ```
 
-Medicare Advantage attainment rates among all Medicare eligibles have demonstrated a positive trend from 2010 to 2015. In 2010, Medicare Advantage's share of the market was about 20% and rose to nearly 30% by 2015 (see Figure 4). This increase appears to occur independently of any shifts in benchmark payments, as those have remained stable across the time period (see Figure 3).
+Medicare Advantage attainment rates among all Medicare eligibles have demonstrated a positive trend from 2010 to 2015. In 2010, Medicare Advantage's share of the market was about 20% and rose to nearly 30% by 2015 (see Figure 4). This increase appears to occur independently of any shifts in benchmark payments, as those have remained stable (despite a slight increase from 1012 tot 2014) across the time period (see Figure 3).
 
 
 \newpage 
@@ -149,7 +149,7 @@ modelsummary(models,
 print(q7_fig)
 ```
 
-The results are generally stable across the range of bandwidths. For the 2.5 vs. 3-stars cutoff, the estimated treatment effect remains consistently positive and statistically significant across all bandwidths, though the magnitude slightly decreases as the bandwidth widens. In contrast, the estimates for the 3 vs. 3.5-stars cutoff are small, close to zero, and statistically insignificant (with the exception of a bandwidth of 0.10). This suggests that the results observed using RDD are relatively insensitive to the choice of bandwidth.
+The results are generally stable across the range of bandwidths. For the 2.5 vs. 3 stars cutoff, the estimated treatment effect remains consistently positive and statistically significant across all bandwidths, though the magnitude slightly decreases as the bandwidth widens. In contrast, the estimates for the 3 vs. 3.5 stars cutoff are close to zero, and statistically insignificant (with the exception of a bandwidth of 0.10). This suggests that the results observed using RDD are relatively insensitive to the choice of bandwidth.
 
 
 \newpage 
@@ -168,7 +168,7 @@ The results are generally stable across the range of bandwidths. For the 2.5 vs.
 grid.arrange(dist_3, dist_35, ncol = 2, top = "Density of Running Variable")
 ```
 
-The density plots show the distribution of raw plan ratings around the 2.75 and 3.25 cutoffs. In panel a, there is a clear spike just above the 2.75 threshold, suggesting a potential manipulation of scores to round plans up to a 3-star rating. In contrast, panel b shows a smoother distribution around the 3.25 threshold, with no clear discontinuity or sign of manipulation. This suggests that manipulation is more likely to occur at the lower threshold.
+The density plots show the distribution of raw plan ratings around the 2.75 and 3.25 cutoffs. Looking at both thresholds, there is no clear discontinuity or sign of manipulation (which would present as a notable spike immediately following the cutoff). This suggests that manipulation is unlikely to be impacting the results.
 
 
 \newpage 
@@ -196,4 +196,4 @@ In both panels, the HMO characteristic shows a greater imbalance between plans a
 
 The results from Questions 5–9 suggest that increasing a plan’s star rating can have a meaningful impact on enrollments. The RD analysis in Question 6 showed that receiving a 3-star rating (vs. 2.5 stars) leads to a statistically significant increase in market share. In contrast, the effect of moving from 3 to 3.5 stars was small and statistically insignificant. These findings were robust across different bandwidths (Question 7), indicating that the treatment effect at the 3-star threshold is not particularly sensitive to the choice of bandwidth size.
 
-The density plots in Question 8 suggest possible manipulation of ratings just above the 2.75 cutoff, with a visible spike in plan ratings, while the distribution near 3.25 appeared more uniform. This could potentially be due to the significant increase observed around the cutoff for 2.5 vs. 3-star plans but not for 3 vs. 3.5-star plans. Finally, in Question 9, I found that plans just above the cutoff were different in observable characteristics—particularly HMO status—suggesting that RDD assumptions may be weaker around the 3-star threshold. Despite this limitation, taken together, these results highlight that 3 stars is a meaningful policy threshold for Medicare Advantage plans, which may incentivize manipulative behavior to obtain that rating.
+The density plots in Question 8 provide little evidence of manipulation, although the data are not uniform. Evidence of manipulation would weaken the validity of the RDD results presented; however, this is not a major concern given the distribution plots. Finally, in Question 9, I found that plans just above the cutoff differed in observable characteristics—particularly HMO status—suggesting that RDD assumptions may be weaker around the 3-star threshold. Despite this limitation, taken together, these results highlight that 3 stars is a meaningful policy threshold for Medicare Advantage plans, which may incentivize manipulative behavior to obtain that rating.
